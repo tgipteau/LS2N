@@ -7,6 +7,8 @@ Created on Mon Dec 16 13:48:09 2024
 import model
 import read
 import analysis as als
+import os
+
 params = {
     "a": 0.006,
     "b": 0.247,
@@ -17,7 +19,7 @@ params = {
     "alpha": 0.5,
     "beta": 0.5,
     "delta": 0.268,
-    "tmax": 10,
+    "tmax": 50,
     "p": 0.1,
     "I": 0.5,
     "ui": 5.838126612843206,
@@ -28,9 +30,12 @@ params = {
 
 model.sim_PDE(params)
 
+
 filename = 'output/solution.txt'
 
+    
 DF, T = read.solution(filename)
+
 print(T)
 Time_to_plot = list(range(0, len(T), len(T)//15))
 

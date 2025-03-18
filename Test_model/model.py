@@ -31,7 +31,7 @@ def sim_PDE(params, script_name = "modele_gen.edp"):
             file.write(f"{key} {value}\n")
             
     try:
-        subprocess.run(['FreeFem++', script_name])
+        subprocess.run(['FreeFem++-CoCoa', script_name])
         print(f"Script Freefem {script_name} ok")
     except subprocess.CalledProcessError as e:
         print(f"Erreur {script_name}: {e}")

@@ -7,7 +7,7 @@ h 0.04
 alpha 0.5
 beta 0.5
 delta 0.268
-tmax 10
+tmax 50
 p 0.1
 I 0.5
 ui 5.838126612843206
