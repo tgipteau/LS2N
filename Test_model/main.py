@@ -25,13 +25,14 @@ params = {
     "wi": 2.481203810458363
 }
 
+
 model.sim_PDE(params)
 
 filename = 'output/solution.txt'
 
 DF, T = read.solution(filename)
-
-Time_to_plot = list(range(0, len(T), 5))
+print(T)
+Time_to_plot = list(range(0, len(T), len(T)//15))
 
 read.clean()
 for t in Time_to_plot:
