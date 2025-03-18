@@ -9,7 +9,7 @@ Created on Thu Mar 13 09:37:25 2025
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+sdfsdf
 
 def norm_ueq(params, U, T):
     """
