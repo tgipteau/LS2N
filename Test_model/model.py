@@ -7,7 +7,7 @@ Created on Fri Mar 14 10:54:10 2025
 """
 
 import subprocess
-import read
+import Test_model.read as read
 
 
 def sim_PDE(params, script_name = "modele_gen.edp"):

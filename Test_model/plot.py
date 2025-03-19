@@ -5,11 +5,11 @@ Created on Mon Dec 16 13:48:09 2024
 @author: sully
 """
 import subprocess
-import read
+import Test_model.read as read
 
 
 
-filename = 'solution.txt'
+filename = 'Test_model/output/solution.txt'
 
 DF, T = read.solution(filename)
 

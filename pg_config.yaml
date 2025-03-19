@@ -1,0 +1,11 @@
+caption: 'Simulation'
+screen_width: 800
+screen_height: 600
+margin_alpha: 0.8
+bg_color:  [255, 205, 90]  # Sable
+
+node_radius: 30
+node_color: [0, 0, 0]  # Noir
+
+timestep: 0.2
+max_time: 250
