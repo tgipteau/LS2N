@@ -153,7 +153,7 @@ def assign_data_to_cells(data):
 
 
 # Charger les données
-file_name = 'Test_model/output/solution.txt'
+file_name = '../Test_model/output/solution.txt'
 data = load_data(file_name)
 
 # Créer les cellules de la grille et les assigner aux données

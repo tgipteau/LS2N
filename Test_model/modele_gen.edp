@@ -59,6 +59,7 @@ real wplus = vecval(14);
 // Diffusion coefficient of seeds
 real d = 50.0;
 
+// NOTA on peut en faire une ellipse
 // Domain Omega ( disk of radius L)
 real L = 50.0;
 border C(t=0 ,2* pi ){x=(L /2)*( cos (t ))+( L /2); y=(L /2)*( sin (t ))+( L /2);}

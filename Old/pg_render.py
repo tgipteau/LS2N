@@ -1,6 +1,8 @@
 """ Module chargé des travaux de rendus.
  Dont dépend pg_main."""
 
+from matplotlib import pyplot as plt
+
 ### Imports et chargement de la config yaml
 import pygame
 import yaml
@@ -8,6 +10,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import Delaunay
 import random
+import io
 
 config = yaml.load(open('pg_config.yaml', 'r'), Loader=yaml.FullLoader)
 
@@ -22,15 +25,30 @@ def load_and_scale_image(image_path, size):
 # Taille cible pour chaque image
 elmt_size = (config['elmt_size'], config['elmt_size'])
 fire_size = (config['fire_size'], config['fire_size'])
-
+"""
 # Chargement et redimensionnement des images
 images = {
     "young_boreal": load_and_scale_image("assets/young_boreal.png", elmt_size),
     "old_boreal": load_and_scale_image("assets/old_boreal.png", elmt_size),
-    "seed": load_and_scale_image("assets/seed.png", elmt_size),
+    "seed": load_and_scale_image("assets/seed_big.png", elmt_size),
     "fire": load_and_scale_image("assets/fire.png", fire_size),
 }
+"""
+images = {
+    "young_boreal": load_and_scale_image("../assets/temperate.png", elmt_size),
+    "old_boreal": load_and_scale_image("../assets/boreal.png", elmt_size),
+    "seed": load_and_scale_image("../assets/seed.png", elmt_size),
+    "fire": load_and_scale_image("../assets/fire.png", fire_size),
+}
 
+"""
+images = {
+    "young_boreal": load_and_scale_image("assets/biout/young_boreal.png", elmt_size),
+    "old_boreal": load_and_scale_image("assets/biout/old_boreal.png", elmt_size),
+    "seed": load_and_scale_image("assets/biout/seed.png", elmt_size),
+    "fire": load_and_scale_image("assets/fire.png", fire_size),
+}
+"""
 
 def triangle_area(x1, y1, x2, y2, x3, y3):
     """ Calcule l'aire d'un triangle à partir de ses sommets """
@@ -47,29 +65,35 @@ class Node:
         self.u = None
         self.v = None
         self.w = None
-        
-        self.fires = []
-        
-    def handle_fire(self):
-        for t in range(1, len(self.u)):
-            loss_intensity = self.u[t]/self.u[t-1]
-            if loss_intensity < config['fire_threshold']:
-                print("FIRE.")
-                self.fires.append(1)
-            else:
-                self.fires.append(0)
-                
-    def draw(self, screen):
-        pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 7)
-        
-    def draw_fires(self, screen, t):
-        if self.fires[t] == 0:
-            pass
-        else:
-            
-            screen.blit(images['fire'], (self.x-fire_size[0]//2, self.y-fire_size[0]//2))
-                
 
+        self.color = (0,0,0)
+        
+                
+    def draw(self, screen, show_nodes):
+        if show_nodes :
+            pygame.draw.circle(screen, self.color, (self.x, self.y), 3)
+    
+    
+    """
+    def generate_counts(self, u_min, u_max,
+                                v_min, v_max,
+                                w_min, w_max):
+        self.counts_young = []
+        self.counts_old = []
+        self.counts_seed = []
+        
+        for t in range(config['max_time']):
+            
+            # combien d'élément à chaque temps pour représenter la densité
+            N = 4
+            self.counts_young.append(int((self.u[t] - u_min) * N / (u_max - u_min)))
+            self.counts_old.append(int((self.v[t] - v_min) * N / (v_max - v_min)))
+            self.counts_seed.append(int((self.w[t] - w_min) * N / (w_max - w_min)))
+        
+        plt.plot(self.u, self.w, self.v)
+        plt.show()
+    """
+    
 
 class Zone:
     """ Représente une zone polygonale (triangle) dans l'écran avec ses nœuds et ses propriétés."""
@@ -83,6 +107,8 @@ class Zone:
         self.y_min = int(min([node.y for node in self.nodes]))
         self.y_max = int(max([node.y for node in self.nodes]))
         
+        self.centre = self.centre_zone()
+        
         # valeurs moyennes de la zone en fonction du temps
         self.u_avg = [np.mean([node1.u[t], node2.u[t], node3.u[t]]) for t in range(len(node1.u))]  # Moyenne de u
         self.v_avg = [np.mean([node1.v[t], node2.v[t], node3.v[t]]) for t in range(len(node1.v))]  # Moyenne de v
@@ -94,7 +120,16 @@ class Zone:
         self.fire = []
         # les positions sont générées dans la boucle main, après que build_from_solution
         # ait donné les densités min et max
-            
+        
+    def handle_fires(self):
+        
+        for t in range(config['max_time']):
+            loss_intensity = self.u_avg[t + 1] / self.u_avg[t]
+            if loss_intensity < config['fire_threshold']:
+                # il y a un feu au temps t
+                self.fire.append(self.centre)
+            else:
+                self.fire.append(None)
     
     def generate_positions(self, u_min, u_max,
                                 v_min, v_max,
@@ -106,25 +141,27 @@ class Zone:
             self.pos_young_boreal.append([])
             self.pos_old_boreal.append([])
             self.pos_seed.append([])
-
-
-            # combien d'éléments de chaque type ?
-            N = config['nb_elmts_as_max_density']
-            count_young_boreal = int((self.u_avg[t] - u_min) * N / (u_max - u_min))
-            count_old_boreal = int((self.v_avg[t] - v_min) * N / (v_max - v_min))
-            count_seed = int((self.w_avg[t] - w_min) * N / (w_max - w_min))
             
-            for _ in range(count_young_boreal):
-                x, y = self.random_point_in_triangle(self.nodes)
-                self.pos_young_boreal[t].append((x, y))
+            if self.fire[t] is None:
+                # on n'affiche que si pas de feu
             
-            for _ in range(count_old_boreal):
-                x, y = self.random_point_in_triangle(self.nodes)
-                self.pos_old_boreal[t].append((x, y))
-            
-            for _ in range(count_seed):
-                x, y = self.random_point_in_triangle(self.nodes)
-                self.pos_seed[t].append((x, y))
+                # combien d'éléments de chaque type ?
+                N = config['nb_elmts_as_max_density']
+                count_young_boreal = int((self.u_avg[t] - u_min) * N / (u_max - u_min))
+                count_old_boreal = int((self.v_avg[t] - v_min) * N / (v_max - v_min))
+                count_seed = int((self.w_avg[t] - w_min) * N / (w_max - w_min))
+                
+                for _ in range(count_young_boreal):
+                    x, y = self.random_point_in_triangle(self.nodes)
+                    self.pos_young_boreal[t].append((x, y))
+                
+                for _ in range(count_old_boreal):
+                    x, y = self.random_point_in_triangle(self.nodes)
+                    self.pos_old_boreal[t].append((x, y))
+                
+                for _ in range(count_seed):
+                    x, y = self.random_point_in_triangle(self.nodes)
+                    self.pos_seed[t].append((x, y))
     
     
     def contains(self, x, y):
@@ -145,6 +182,13 @@ class Zone:
         return abs(area_ABC - (area_PAB + area_PBC + area_PCA)) < 1e-6  # Tolérance numérique
     
     
+    def centre_zone(self):
+        A, B, C = self.nodes[0], self.nodes[1], self.nodes[2]
+        x_G = (A.x + B.x + C.x) / 3
+        y_G = (A.y + B.y + C.y) / 3
+        return x_G, y_G
+  
+  
     def random_point_in_triangle(self, nodes):
         """ Génère un point aléatoire à l'intérieur du triangle défini par les nœuds. """
         # Chaque coordonnée (x, y) est obtenue en calculant une combinaison convexe des 3 points du triangle
@@ -180,13 +224,15 @@ class Zone:
             for pos in self.pos_seed[t]:
                 screen.blit(images["seed"], pos)
                 
+        if self.fire[t] is not None:
+            pos = (self.fire[t][0]- fire_size[0]//2, self.fire[t][1]- fire_size[0]//2)
+            screen.blit(images["fire"], pos)
+                
             
-    def draw_border(self, screen):
+    def draw_border(self, screen, color):
         points = [(node.x, node.y) for node in self.nodes]
-        pygame.draw.polygon(screen, (255,0,255), points, 2)
+        pygame.draw.polygon(screen, color, points, 4)
     
-    
-    ### Définition des fonctions de préparation du rendu
 
 
 def build_from_solution(filepath=config['solution_file_path']):
@@ -221,8 +267,6 @@ def build_from_solution(filepath=config['solution_file_path']):
         
         nodes_.append(node)
         
-    for node in nodes_:
-        node.handle_fire()
     
     return nodes_, u_min, u_max, v_min, v_max, w_min, w_max
 
@@ -275,3 +319,61 @@ def triangulate_and_create_zones(nodes):
         zones.append(zone)
     
     return zones
+
+
+def get_series_from_zones(zones):
+    
+    u_avg = [np.mean([zone.u_avg[t] for zone in zones]) for t in range(config['max_time'])]
+    v_avg = [np.mean([zone.v_avg[t] for zone in zones]) for t in range(config['max_time'])]
+    w_avg = [np.mean([zone.w_avg[t] for zone in zones]) for t in range(config['max_time'])]
+    
+    return u_avg, v_avg, w_avg
+
+
+def create_matplotlib_figure(u, v, w):
+    """ Génère une figure Matplotlib avec trois sous-graphiques pour U, V et W. """
+    fig, axes = plt.subplots(3, 1, figsize=(5, 8), dpi=100)  # 3 lignes, 1 colonne
+
+    x = list(range(len(u)))  # Axe des abscisses basé sur la longueur de u
+
+    # Tracé des séries sur trois subplots différents
+    axes[0].plot(x, u, label="Young trees", color="lime", linestyle="--", marker="o", linewidth=0.5)
+    axes[0].set_ylabel("U")
+    axes[0].legend()
+    axes[0].set_title("Evolution of selected zones")
+
+    axes[1].plot(x, v, label="Old trees", color="darkgreen", linestyle="--", marker="s", linewidth=0.5)
+    axes[1].set_ylabel("V")
+    axes[1].legend()
+
+    axes[2].plot(x, w, label="Seeds", color="brown", linestyle=":", marker="d", linewidth=0.5)
+    axes[2].set_xlabel("Temps")
+    axes[2].set_ylabel("W")
+    axes[2].legend()
+
+    # Ajuster la disposition des graphes pour éviter le chevauchement
+    plt.tight_layout()
+
+    return fig
+    
+    
+def plot_to_surface(fig):
+    """ Convertit une figure Matplotlib en surface Pygame. """
+    
+    # Sauvegarde de la figure en mémoire (format PNG)
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches='tight')  # Suppression des marges inutiles
+    plt.close(fig)
+    buf.seek(0)
+    
+    # Convertir en image Pygame
+    return pygame.image.load(buf)
+
+
+def screen_plots_to(screen, als_rect, zones):
+    
+    u,v,w = get_series_from_zones(zones)
+    fig = create_matplotlib_figure(u, v, w)
+    surf = plot_to_surface(fig)
+    screen.blit(surf, als_rect)
+    

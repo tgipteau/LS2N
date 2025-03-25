@@ -10,24 +10,30 @@ from pygame_gui.core import ObjectID
 
 config = yaml.load(open('pg_config.yaml', 'r'), Loader=yaml.FullLoader)
 
+# Définition des mesures
+screen_height = config['screen_height']
+screen_width = config['screen_width']
+
+view_width = config['view_width']
+view_height = config['view_height']
+
+toolbar_width = config['toolbar_width']
+toolbar_height = config['toolbar_height']
+
+tool_start_left = toolbar_width * config['toolbar_margin']
+tool_width = toolbar_width * (1 - 2 * config['toolbar_margin'])
+tool_height = (toolbar_height // config['toolbar_capacity'])
+
+time_slider_height = 25
+
+als_start = toolbar_width + view_width
+als_width = screen_width - als_start
+als_height = screen_height
 
 
 def make_tools(manager):
    
     ### Atelier création de rectangles
-    # Définition des mesures
-    screen_height = config['screen_height']
-    screen_width = config['screen_width']
-    
-    toolbar_width = config['toolbar_width']
-    toolbar_height = config['toolbar_height']
-    
-    tool_start_left = toolbar_width * config['toolbar_margin']
-    tool_width = toolbar_width * (1 - 2*config['toolbar_margin'])
-    tool_height = (toolbar_height // config['toolbar_capacity'])
-    
-    time_slider_height = 25
-    
     rects = [pygame.Rect(tool_start_left, i * tool_height + 5,
                          tool_width, tool_height) for i in range(config['toolbar_capacity'])]
     slider_rect = pygame.Rect((toolbar_width, screen_height-time_slider_height),
@@ -80,13 +86,24 @@ def make_tools(manager):
         container=toolbar_container,
     )
     
-    analysis_button = pygame_gui.elements.UIButton(
+    clear_sel_button = pygame_gui.elements.UIButton(
         relative_rect=rects[3],
-        text="analysis",
-        object_id=ObjectID(object_id="#analysis_button"),
+        text="clear selection",
         manager=manager,
         container=toolbar_container,
     )
+    
+    nodes_button = pygame_gui.elements.UIButton(
+        relative_rect=rects[4],
+        text="Nodes",
+        manager=manager,
+        container=toolbar_container,
+    )
+    
+    ## partie analyse
+    
+    als_rect = pygame.Rect((als_start + 10, 10), (als_width - 10, als_height - 10))
+    
     
     
     return {
@@ -96,5 +113,11 @@ def make_tools(manager):
         "old_button": old_button,
         "seed_button": seed_button,
         "play_button": play_button,
-        "analysis_button": analysis_button,
+        "clear_sel_button": clear_sel_button,
+        "nodes_button": nodes_button,
+        "als_rect": als_rect,
     }
+
+
+    
+    
