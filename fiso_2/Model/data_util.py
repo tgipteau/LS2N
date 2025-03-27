@@ -8,17 +8,18 @@ import re
 
 # Fonction pour extraire le temps t du nom de fichier
 def extraire_t(fichier):
-    match = re.search(r"u1-(\d+)\.dat", fichier)
+    match = re.search(r"u-(\d+)\.dat", fichier)
     return int(match.group(1)) if match else float('inf')
 
 
 def get_df(folder_path):
+
     dossier = folder_path
-    fichiers = glob.glob(f"{dossier}/u1-*.dat")
+    fichiers = glob.glob(f"{dossier}/u-*.dat")
     
     # Trier les fichiers par t
     fichiers = sorted(fichiers, key=extraire_t)
-    
+
     # Lecture et concaténation des fichiers
     dfs = []
     for f in fichiers:
@@ -35,5 +36,9 @@ def get_df(folder_path):
     df_final = pd.concat(dfs, ignore_index=True)
     df_final = df_final.drop_duplicates()
     
+    df_feux = pd.read_csv(f"{dossier}/fires.dat", sep="\t", header=None,
+                          names=["t", "x", "y", "r", "I"])
+    
     # on renvoie le df et le pas de temps maximal
-    return df_final, df_final["t"].max()
+    return df_final, df_feux
+
