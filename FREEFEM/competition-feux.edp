@@ -35,7 +35,7 @@ real b2 = 4.0;
 real d2 = 10;
 
 // Compétition
-real gamma = 0.05;
+real gamma = - 0.05;
 
 // Discrétisation en temps
 real dt = 0.05;
@@ -43,11 +43,14 @@ real dtau = dt/2.0;
 
 
 // Génération de nombre aléatoire
-real p = 0.2;		// probabilité d'un événement extrême
+real p = 0.1;		// probabilité d'un événement extrême
 			// p = 0 -> aucun événement extrême
 			// p = 1 -> événement extrême à tous les coups
+/*
 real intensity = randreal1(); 	// intensity = 0 -> aucun effet
 			// intensity = 1 -> tous les arbres sont tués dans la zone de l'événement extrême
+*/
+
 
 func int Bernoulli(real p)
 {
@@ -70,10 +73,10 @@ mesh Th = buildmesh(C(80));
 
 fespace Vh(Th, P1);
 
-real hb1 = 0.1;
-real hb2 = 1;
+real hb1 = 0.2;
+real hb2 = 0.3;
 real hm1 = 0.1;
-real hm2 = 1;
+real hm2 = 0.15;
 
 
 
@@ -370,8 +373,8 @@ for (int m=0; m<10/dt; m++)
 
 
 					cout << "Feu en (" << xee << ", " << yee << ")." << endl;
-					real ree = 14.0*randreal1();	//radius extreme event
-					real intensity = randreal1(); // random intensity
+					real ree = 5.0 * randreal1() + 5.0;	//radius extreme event 5 to 10
+					real intensity = 0.3 + 0.7 * randreal1(); // random intensity .3 to 1
 					
 
 					// enregistrement des infos sur le feu dans le fichier

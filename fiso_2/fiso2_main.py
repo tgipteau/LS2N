@@ -16,14 +16,14 @@ from Model.data_util import get_df
 # ----------------------- Définition des constantes / semi-variables
 ########################################################################################
 
-DATA_FOLDER_PATH = './Model/foret2_clusters'
+DATA_FOLDER_PATH = './Model/foret3-nocompet-feux'
 SAVE_VIDEO = True
 
 # Généralités pygame
 SCREEN_WIDTH = 1680
 SCREEN_HEIGHT = 937
-TPS = 10  # ticks par seconde
-SHOW_GUI = False
+TPS = 20  # ticks par seconde
+SHOW_GUI = True
 
 # Paramètres rendu isométrique
 ISO_SCALE = 15
@@ -45,7 +45,7 @@ ELMT_SIZE = 10  # taille des assets blittés en pixel
 
 # Paramètres feux
 FIRE_DURATION = 10  # durée en pas de temps
-FIRE_MAX_SIZE = 40
+FIRE_MAX_SIZE = 25
 
 # Max d'arbres (réel)
 TREES_T_MIN = 0
@@ -304,7 +304,9 @@ class Fire:
         self.r = r
         self.I = I
         
-        self.asset = pygame.transform.scale(images["fire"], (int(FIRE_MAX_SIZE * self.I), int(FIRE_MAX_SIZE * self.I)))
+        self.blit_size = int(FIRE_MAX_SIZE * self.I)
+        
+        self.asset = pygame.transform.scale(images["fire"], (self.blit_size, self.blit_size))
         self.positions = self.generate_positions_of_extent()
         
     
@@ -343,9 +345,11 @@ class Fire:
             active_positions = [((t_, x, y)[1], (t_, x, y)[2]) for (t_, x, y) in self.positions if 0 <= t_ <= rel_t ]
             iso_active_positions = [projeter_en_isometrique(x, y) for (x, y) in active_positions]
             
-            for pos in iso_active_positions:
-                screen.blit(self.asset, pos)
             
+            for pos in iso_active_positions:
+                screen.blit(self.asset, (pos[0]-self.blit_size//2, pos[1]-self.blit_size//2))
+            
+        
     
     
 # class::Tree : arbre avec sa position (isométrique) son type et affiché ou non. Méthode d'affichage incluse.
