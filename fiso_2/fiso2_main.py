@@ -7,17 +7,23 @@ import random
 import cv2
 import os
 import re
+import shutil
 
-from sympy.codegen.fnodes import ubound
 
 from Model.data_util import get_df
+
+import subprocess
+import time
+
 
 ########################################################################################
 # ----------------------- Définition des constantes / semi-variables
 ########################################################################################
 
-DATA_FOLDER_PATH = './Model/foret3-nocompet-feux'
-SAVE_VIDEO = True
+DATA_FOLDER_PATH = "/Users/thibautgipteau/Desktop/LS2N/fiso_2/data-raw-competition-feux"
+PARAMS_PATH = "Model/params-compet-feux.txt"
+EDP_PATH = "Model/competition-feux.edp"
+SAVE_VIDEO = False
 
 # Généralités pygame
 SCREEN_WIDTH = 1680
@@ -49,7 +55,7 @@ FIRE_MAX_SIZE = 25
 
 # Max d'arbres (réel)
 TREES_T_MIN = 0
-TREES_T_MAX = 22
+TREES_T_MAX = 30
 
 # MAX T est valué par data_util lors du chargement des données (voir fonction "build_from_solution")
 MAX_T = -1
@@ -71,10 +77,10 @@ ICE = (160, 190, 235)
 print("Program started.")
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption('Foret Flat 2')
+pygame.display.set_caption('IsoForest2')
 
 
-def get_latest_output_number(folder):
+def get_latest_video_number(folder):
     pattern = re.compile(r"output-(\d+)\.avi$")
     max_n = -1
     
@@ -87,10 +93,125 @@ def get_latest_output_number(folder):
     return max_n
 
 
-n = get_latest_output_number("videos") + 1
+n = get_latest_video_number("videos") + 1
 video_path = f'videos/output-{n}.avi'
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
 video_writer = cv2.VideoWriter(video_path, fourcc, 45, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+
+########################################################################################
+# ----------------------- Lancement de simulations par FreeFEM++
+########################################################################################
+
+params = {
+    "alpha1": 1.0,
+    "beta1": 1.0,
+    "eta1": 1.0,
+    "a1": 0.9,
+    "b1": 4.0,
+    "d1": 10.0,
+
+    "alpha2": 1.0,
+    "beta2": 1.0,
+    "eta2": 1.0,
+    "a2": 0.9,
+    "b2": 4.0,
+    "d2": 10.0,
+
+    "gamma": -0.05,
+
+    "dt": 0.05,
+    "dtau": 0.025,
+
+    "p": 0.1,
+
+    "L": 50.0,
+    "l": 80.0,
+
+    "hb1": 0.2,
+    "hb2": 0.3,
+    "hm1": 0.1,
+    "hm2": 0.15,
+
+    "frequency": 1,
+    "minree": 3.0,
+    "maxree": 8.0,
+    "minI": 0.3,
+    "maxI": 1.0,
+    
+    "tmax": 0.1
+}
+
+
+def sim_PDE(params, script_name=EDP_PATH):
+    
+    print("\n------------------------")
+    print("New simulation.")
+    # Créer un dossier unique pour cette simulation
+    timestamp = time.strftime("%Y%m%d-%H%M%S")  # Utilisation d'un horodatage comme nom de dossier
+    output_dir = f"simulation_{timestamp}"
+    
+    # Créer le dossier
+    os.makedirs(output_dir, exist_ok=True)
+    
+    
+    # Écrire les paramètres dans le fichier params.txt dans le dossier de sortie
+    params_file_path = os.path.join(output_dir, "params.txt")  # Chemin complet du fichier params.txt
+    with open(params_file_path, "w") as file:
+        for key, value in params.items():
+            file.write(f"{key} {value}\n")
+    
+    print("...Loaded params.")
+    
+    # Copier le script FreeFem dans le dossier de sortie
+    script_dest = os.path.join(output_dir, os.path.basename(script_name))
+    shutil.copy(script_name, script_dest)  # Copier le fichier du script FreeFem dans le dossier de sortie
+   
+    # Changer le répertoire courant pour output_dir
+    original_cwd = os.getcwd()  # Enregistrer le répertoire d'origine
+    os.chdir(output_dir)
+    
+    print("Output will be moved to Simulation/", output_dir)
+    
+
+    # Vérifier si FreeFem++-CoCoa est disponible, sinon lancer FreeFem++ classique
+    try:
+        if subprocess.call(["which", "FreeFem++-CoCoa"]) == 0:  # Vérifier la présence de FreeFem++-CoCoa
+            # Lancer FreeFem++-CoCoa avec les résultats redirigés vers le dossier
+            subprocess.run(
+                ['FreeFem++-CoCoa', os.path.basename(script_name), '-glut',
+                 '/Applications/FreeFem++.app/Contents/ff-4.15/bin/ffglut']
+            )
+            print(f"FreeFem script {script_name} launched with FreeFem++-CoCoa.")
+        else:
+            # Lancer FreeFem++ classique sinon, avec les résultats redirigés vers le dossier
+            subprocess.run(['FreeFem++', os.path.basename(script_name)])
+            print(f"FreeFem script {script_name} launched with FreeFem++ (not CoCoa).")
+    except subprocess.CalledProcessError as e:
+        print(f"Error while trying to run script {script_name}: {e}")
+        exit()
+    
+    print("Waiting...")
+    while not os.path.exists("EOP"):
+        time.sleep(2)
+   
+    print("Simulation is done.")
+    # Retour dans le dossier du script python
+    os.chdir(original_cwd)
+    
+    # Suppression du script FreeFem copié
+    os.remove(script_dest)
+    os.remove(os.path.join(output_dir, "EOP"))
+    
+    # Déplacer le dossier de simulation dans le répertoire de stockage
+    storage_path = "Simulations"
+    shutil.move(output_dir, storage_path)  # Déplace le dossier vers le répertoire de stockage
+    
+    DATA_FOLDER_PATH = "Simulations" + output_dir
+    print("Back to main.")
+    print("--------------------------\n")
+    
+    return output_dir
 
 
 ########################################################################################
@@ -103,9 +224,9 @@ def load_text_from_file(file_path):
         return file.read()
 
 font = pygame.font.Font(None, 26)
-file_path = DATA_FOLDER_PATH + "/params.dat"
-text_content = load_text_from_file(file_path)
-text_surface = font.render(text_content, True, BLACK)
+#file_path = "Model/params-compet-feux.txt"
+#text_content = load_text_from_file(file_path)
+#text_surface = font.render(text_content, True, BLACK)
 
 
 def load_and_scale_image(image_path, size):
@@ -141,7 +262,7 @@ def projeter_en_isometrique(x, y):
 
 
 ########################################################################################
-# ----------------------- Construction du slider et du bouton play
+# ----------------------- Construction de l'UI
 ########################################################################################
 
 manager = pygame_gui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -164,6 +285,35 @@ play_button = pygame_gui.elements.UIButton(
     manager=manager,
 )
 
+#### Partie "sélection de la simulation"
+
+simulations_dir = "Simulations"
+simulations = [sim for sim in os.listdir(simulations_dir) if os.path.isdir(os.path.join(simulations_dir, sim))]
+
+# Ajout de l'option "Lancer une nouvelle simulation"
+options_list = ["NEW SIMULATION..."] + simulations
+
+# Création de la fenêtre popup
+popup_rect = pygame.Rect((SCREEN_WIDTH//4, SCREEN_HEIGHT//4), (SCREEN_WIDTH//2, SCREEN_HEIGHT//2))
+popup_window = pygame_gui.elements.UIWindow(rect=popup_rect, manager=manager, window_display_title="Choisir une Simulation")
+
+# Liste déroulante pour le choix de simulation
+dropdown = pygame_gui.elements.UIDropDownMenu(
+    options_list=options_list,
+    starting_option="NEW SIMULATION...",
+    relative_rect=pygame.Rect(20, 50, 260, 30),
+    manager=manager,
+    container=popup_window
+)
+
+# Bouton de validation
+validate_button = pygame_gui.elements.UIButton(
+    relative_rect=pygame.Rect(80, 100, 120, 40),
+    text="Valider",
+    manager=manager,
+    container=popup_window
+)
+
 
 ########################################################################################
 # ----------- Importation des résultats FreeFem++ et construction des nodes
@@ -184,14 +334,14 @@ class Node:
 
 
 # build_from_solution : construction des nodes à partir du dossier de sortie FreeFem++
-def build_from_solution():
+def build_from_solution(simulation_folder):
     global MAX_T
     
-    print(f"Building from solution folder \"{DATA_FOLDER_PATH}\"...")
+    print(f"Building from solution folder \"{simulation_folder}\"...")
     nodes__ = []
     
     # fonction get_df de Model.data_util.py
-    df, df_feux = get_df(DATA_FOLDER_PATH)
+    df, df_feux = get_df(simulation_folder)
     MAX_T = df["t"].max()
     # nota : le df_feux est passé en retour, il n'est pas utilisé avant que les mailles soient définies
     
@@ -349,9 +499,7 @@ class Fire:
             for pos in iso_active_positions:
                 screen.blit(self.asset, (pos[0]-self.blit_size//2, pos[1]-self.blit_size//2))
             
-        
-    
-    
+ 
 # class::Tree : arbre avec sa position (isométrique) son type et affiché ou non. Méthode d'affichage incluse.
 class Tree:
     
@@ -555,15 +703,7 @@ if __name__ == "__main__":
     
     print(f"SAVE_VIDEO is set to {SAVE_VIDEO}.\n")
     
-    ########################################################################################
-    # -------------------- Construction de la simulation
-    ########################################################################################
     
-    nodes_, df_feux = build_from_solution()
-    # décommenter ci-dessous pour affiner le maillage (attention au coût de calcul : 4* plus de mailles !)
-    # nodes_ +=  generate_intermediate_nodes(nodes_)
-    tiles = triangulate_and_create_tiles(nodes_)
-    fires = build_fires(df_feux)
     
     ########################################################################################
     # -------------------- Boucle principale de pygame
@@ -571,8 +711,14 @@ if __name__ == "__main__":
     
     clock = pygame.time.Clock()
     running = True
-    play_mode = True
+    play_mode = False
     said_last_words = False
+    
+    selected_dropdown = None
+    selected_simulation = None
+    loaded_simulation = False
+    popup_active = True
+    param_popup_active = False
     
     t = 0
     FPS = 60
@@ -583,45 +729,57 @@ if __name__ == "__main__":
     print("Running pygame loop...")
     while running:
         
-        # finaliser la construction du slider (MAX_T pas disponible avant appel à build_from_solution)
-        slider.value_range = (0, MAX_T - 1)
-        
-        if play_mode:
-            # en play_mode (default) le slider suit la simulation
-            slider.set_current_value(t)
-            # tick_it augmente. Si tick_it est 0 modulo truc, avancer d'un pas de temps, et remettre tick à 0
-            tick_it += 1
-            if not tick_it % (FPS // TPS):
-                t = min(t + 1, MAX_T - 1)
-                tick_it = 1
-        else:
-            # hors play_mode, c'est le slider qui contrôle le temps
-            t = int(slider.get_current_value())
-        
-        ##########################################
-        ## Partie affichage
-        ##########################################
         screen.fill(ICE)
         
-        
-        for tile in tiles:
-            tile.draw_tile(screen, t)
-        for tile in tiles:
-            tile.update(t)
-            tile.draw_trees(screen)
-        for fire in fires:
-            fire.blit(screen, t)
-        
-        # affichage des paramètres
-        screen.blit(text_surface, (20, 50))
-        # affichage de t
-        t_surface = font.render(f"T = {t/10:.1f}", True, BLACK)
-        screen.blit(t_surface, (SCREEN_WIDTH//2 - 30, 50))
-        
-        if SHOW_GUI:
-            manager.update(clock.get_time())
-            manager.draw_ui(screen)
-        
+        #### SI LA SIMULATION EST CHOISIE
+        if selected_simulation is not None:
+            
+            # premier passage : on construit le rendu
+            if not loaded_simulation:
+                nodes_, df_feux = build_from_solution(os.path.join(simulations_dir, selected_simulation))
+                # décommenter ci-dessous pour affiner le maillage (attention au coût de calcul : 4* plus de mailles !)
+                # nodes_ +=  generate_intermediate_nodes(nodes_)
+                tiles = triangulate_and_create_tiles(nodes_)
+                fires = build_fires(df_feux)
+                # finaliser la construction du slider (MAX_T dépend de la simulation)
+                slider.value_range = (0, MAX_T - 1)
+                
+                loaded_simulation = True
+                
+            
+            if play_mode:
+                # en play_mode (default) le slider suit la simulation
+                slider.set_current_value(t)
+                # tick_it augmente. Si tick_it est 0 modulo truc, avancer d'un pas de temps, et remettre tick à 0
+                tick_it += 1
+                if not tick_it % (FPS // TPS):
+                    t = min(t + 1, MAX_T - 1)
+                    tick_it = 1
+            else:
+                # hors play_mode, c'est le slider qui contrôle le temps
+                t = int(slider.get_current_value())
+            
+            ##########################################
+            ## Partie affichage
+            ##########################################
+            
+            
+            for tile in tiles:
+                tile.draw_tile(screen, t)
+            for tile in tiles:
+                tile.update(t)
+                tile.draw_trees(screen)
+            for fire in fires:
+                fire.blit(screen, t)
+            
+            # affichage des paramètres
+            # screen.blit(text_surface, (20, 50))
+            
+            # affichage de t
+            t_surface = font.render(f"T = {t/10:.1f}", True, BLACK)
+            screen.blit(t_surface, (SCREEN_WIDTH//2 - 30, 50))
+            
+
         ##########################################
         ## Gestion fin de simulation
         ##########################################
@@ -652,7 +810,8 @@ if __name__ == "__main__":
         ##########################################
         ## Gestion des évenements
         ##########################################
-        
+
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -664,13 +823,75 @@ if __name__ == "__main__":
             elif event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == play_button:
                     play_mode = not play_mode
+                if event.ui_element == validate_button:
+                    selected_dropdown = dropdown.selected_option[0]
+                    
+                    if selected_dropdown == "NEW SIMULATION...":
+                        print(f" [UI] Selected NEW SIMULATION")
+                        
+                        
+                        # Fermer le premier popup
+                        popup_window.kill()
+                        popup_open = False
+                        
+                        # Ouvrir le popup de saisie des paramètres
+                        param_popup_open = True
+                        param_popup_rect = pygame.Rect(200, 100, 400, 800)
+                        
+                        param_popup = pygame_gui.elements.UIPanel(param_popup_rect, manager=manager)
+                        # Ajouter un conteneur scrollable
+                        scroll_container = pygame_gui.elements.UIScrollingContainer(
+                            pygame.Rect(20, 20, 560, 800), manager, container=param_popup
+                        )
+                        
+                        y_offset = 10
+                        param_inputs = {}
+                        
+                        # Champs de saisie pour chaque paramètre dans "params"
+                        for param in params.keys():
+                            label = pygame_gui.elements.UILabel(
+                                pygame.Rect(10, y_offset, 150, 25), param, manager, container=scroll_container
+                            )
+                            entry = pygame_gui.elements.UITextEntryLine(
+                                pygame.Rect(170, y_offset, 80, 25), manager, container=scroll_container
+                            )
+                            entry.set_text(str(params[param]))  # Préremplir avec la valeur actuelle
+                            param_inputs[param] = entry
+                            y_offset += 30  # Espacement réduit
+                        
+                        # Ajuster la hauteur du scrolling container en fonction du nombre de paramètres
+                        scroll_container.set_scrollable_area_dimensions((600, y_offset+ 20))
+                        
+                        # Bouton de validation
+                        validate_param_button = pygame_gui.elements.UIButton(
+                            pygame.Rect(300, 440, 100, 30), "Valider", manager, container=param_popup
+                        )
+                        
+                    else:
+                        print(f" [UI] Selected simulation : {selected_dropdown}")
+                        selected_simulation = selected_dropdown
+                    popup_window.kill()  # Fermer uniquement le popup
+                    popup_active = False  # Indiquer qu'il est fermé
+                    
+                    # Si validation du popup des paramètres
+                if event.ui_element == validate_param_button:
+                    params = {key: float(entry.get_text()) for key, entry in param_inputs.items()}
+                    print("Lancement de la simulation avec :", params)
+                    param_popup.kill()
+                    param_popup_active = False
+                    selected_simulation = sim_PDE(params)
+                    
             
             manager.process_events(event)
+            
         
         ###########################################
         
+        
+        time_delta = clock.tick(FPS) / 1000.0
+        manager.update(time_delta)
+        manager.draw_ui(screen)
         pygame.display.flip()
-        clock.tick(FPS)
-    
+        
     pygame.quit()
     print("END OF PROGRAM.")

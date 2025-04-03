@@ -1,6 +1,8 @@
 """
 Manipulation des données brutes.
 """
+import os
+
 import pandas as pd
 import glob
 import re
@@ -14,8 +16,11 @@ def extraire_t(fichier):
 
 def get_df(folder_path):
 
-    dossier = folder_path
-    fichiers = glob.glob(f"{dossier}/u-*.dat")
+    original_cwd = os.getcwd()
+    os.chdir(folder_path)
+    
+
+    fichiers = glob.glob(f"u-*.dat")
     
     # Trier les fichiers par t
     fichiers = sorted(fichiers, key=extraire_t)
@@ -35,10 +40,16 @@ def get_df(folder_path):
     
     df_final = pd.concat(dfs, ignore_index=True)
     df_final = df_final.drop_duplicates()
-    
-    df_feux = pd.read_csv(f"{dossier}/fires.dat", sep="\t", header=None,
+ 
+ 
+    try:
+        df_feux = pd.read_csv(f"fires.dat", sep="\t", header=None,
                           names=["t", "x", "y", "r", "I"])
+    except FileNotFoundError:
+        df_feux = pd.DataFrame()
+        pass
     
+    os.chdir(original_cwd)
     # on renvoie le df et le pas de temps maximal
     return df_final, df_feux
 
