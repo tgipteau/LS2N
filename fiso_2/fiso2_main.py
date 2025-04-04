@@ -15,6 +15,10 @@ from Model.data_util import get_df
 import subprocess
 import time
 
+## sauvegarder photos = plan b
+## intensité fixe
+## on part sur diff finies
+# GBR sauter chap 7 et 8
 
 ########################################################################################
 # ----------------------- Définition des constantes / semi-variables
@@ -50,7 +54,7 @@ AREA_SCALE = 1  # hectares par pixel
 ELMT_SIZE = 10  # taille des assets blittés en pixel
 
 # Paramètres feux
-FIRE_DURATION = 10  # durée en pas de temps
+FIRE_DURATION = 5  # durée en pas de temps
 FIRE_MAX_SIZE = 25
 
 # Max d'arbres (réel)
@@ -463,7 +467,7 @@ class Fire:
     def generate_positions_of_extent(self):
         # affecte : Liste [(t, x, y)] où t est le temps et (x, y) une position atteinte par le feu
         
-        r_step = int(self.r // FIRE_DURATION)
+        r_step = int(self.r // FIRE_DURATION )
         positions = [(0, self.x, self.y)]  # Le feu démarre au centre
         visited = set(positions)  # Pour éviter les doublons
         
@@ -545,7 +549,7 @@ class Tile:
                                        for true_nb_trees_boreal_t in self.true_nb_trees_boreal]
         
         # bientôt caduque : mémoire des temps de feu
-        self.fires = np.zeros(MAX_T)
+        # self.fires = np.zeros(MAX_T)
         
         # construction des arbres et update initial
         self.trees_temperate = []  # liste d'instances de Tree
@@ -874,12 +878,15 @@ if __name__ == "__main__":
                     popup_active = False  # Indiquer qu'il est fermé
                     
                     # Si validation du popup des paramètres
-                if event.ui_element == validate_param_button:
-                    params = {key: float(entry.get_text()) for key, entry in param_inputs.items()}
-                    print("Lancement de la simulation avec :", params)
-                    param_popup.kill()
-                    param_popup_active = False
-                    selected_simulation = sim_PDE(params)
+                try :
+                    if event.ui_element == validate_param_button:
+                        params = {key: float(entry.get_text()) for key, entry in param_inputs.items()}
+                        print("Lancement de la simulation avec :", params)
+                        param_popup.kill()
+                        param_popup_active = False
+                        selected_simulation = sim_PDE(params)
+                except NameError:
+                    pass
                     
             
             manager.process_events(event)
