@@ -14,8 +14,6 @@ from tqdm import tqdm
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
-# GBR sauter chap 7 et 8
-
 
 ########################################################################################
 # ----------------------- Définition des constantes / semi-variables
