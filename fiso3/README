@@ -1,6 +1,5 @@
-
-1- régler sa simulation dans simulation.py
-2- lancer fiso3.py
+1 - régler ses paramètres de simulation dans config.yaml
+2 - lancer fiso3.main
 
 
  Nota :chaque lancement de fiso3 supprime la simulation précédente et en fait une nouvelle
