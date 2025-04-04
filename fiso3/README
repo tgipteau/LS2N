@@ -1,5 +1,5 @@
 ###################
-####UTILISATION####
+### UTILISATION ###
 ###################
 
 1 - régler ses paramètres de simulation dans config.yaml
@@ -7,7 +7,7 @@
 3- les boutons / curseurs ne sont utilisables qu'après un tour complet de la simulation,
 pour pouvoir sauvegarder la vidéo / les frames
 
----> après utilisation on trouvera dans Simulations/{...} :
+---> après utilisation on trouvera dans Simulations/{SIM_NAME} :
     - les données de la simulation
     - un fichier feux
     - un fichier des paramètres associés à la simulation
