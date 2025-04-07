@@ -1,6 +1,11 @@
+
+Modèle à quatre équations avec compétition. Méthode des différences finies.
+
 ###################
 ### UTILISATION ###
 ###################
+
+
 
 1 - régler ses paramètres de simulation dans config.yaml
 2 - lancer fiso3.main

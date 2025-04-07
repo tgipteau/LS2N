@@ -11,7 +11,7 @@ import random
 import math
 from tqdm import tqdm
 
-with open("config.yaml", "r") as f:
+with open("config_fiso4.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 
@@ -53,7 +53,7 @@ AREA_SCALE = 1  # hectares par pixel
 
 # Max d'arbres (réel)
 TREES_T_MIN = 0
-TREES_T_MAX = 2
+TREES_T_MAX = config['MAX_TRUE_NUMBER_OF_TREES']
 
 # MAX T est valué par data_util lors du chargement des données (voir fonction "build_from_solution")
 MAX_T = -1
@@ -76,8 +76,7 @@ ICE = (160, 190, 235)
 print("Program started.")
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption('IsoForest3')
-
+pygame.display.set_caption('IsoForest4')
 
 video_path = os.path.join(SIMULATION_SAVE_FOLDER, "video.avi")
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')
@@ -110,8 +109,8 @@ def load_and_scale_image(image_path, size):
 
 
 images = {
-    "temperate_tree": load_and_scale_image("assets/temperate.png", ELMT_SIZE),
-    "boreal_tree": load_and_scale_image("assets/boreal2.png", ELMT_SIZE),
+    "mixte_tree": load_and_scale_image("assets/mixte.png", ELMT_SIZE),
+    "boreal_tree": load_and_scale_image("assets/boreal.png", ELMT_SIZE),
     "dead_tree": load_and_scale_image("assets/deadtree.png", ELMT_SIZE),
     "burning_tree": load_and_scale_image("assets/burning_tree.png", ELMT_SIZE),
 }
@@ -120,13 +119,23 @@ images = {
 # ----------------------- Partie simulation - Différences finies
 ########################################################################################
 
-# Chargement des paramètres depuis le fichier YAML (config)
-alpha = config["params_simulation"]["alpha"]
-beta = config["params_simulation"]["beta"]
+## Chargement des paramètres depuis le fichier YAML (config)
+# competitions
 a = config["params_simulation"]["a"]
 b = config["params_simulation"]["b"]
 c = config["params_simulation"]["c"]
-delta = config["params_simulation"]["delta"]
+
+# boreale
+alpha_b = config["params_simulation"]["alpha_b"]
+beta_b = config["params_simulation"]["beta_b"]
+delta_b = config["params_simulation"]["delta_b"]
+
+# mixte
+alpha_m = config["params_simulation"]["alpha_m"]
+beta_m = config["params_simulation"]["beta_m"]
+delta_m = config["params_simulation"]["delta_m"]
+
+# discrétisation
 L = config["params_simulation"]["L"]
 J = config["params_simulation"]["J"]
 T = config["params_simulation"]["T"]
@@ -142,19 +151,32 @@ dx = L / J
 dy = L / J
 dt = T / N
 dtau = dt / 2
-kx = delta * dtau / dx ** 2
-ky = delta * dtau / dy ** 2
+kx_b = delta_b * dtau / dx ** 2
+ky_b = delta_b * dtau / dy ** 2
+kx_m = delta_m * dtau / dx ** 2
+ky_m = delta_m * dtau / dy ** 2
 
 
 # Termes de réaction du modèle
-def reaction(X, t):
+def reaction_b(X, t):
     u, w = X
-    du = alpha * w - q(u)
-    dw = -beta * w + alpha * u
+    du = alpha_b * w - q_b(u)
+    dw = -beta_b * w + alpha_b * u
     return [du, dw]
 
 
-def q(u):
+def reaction_m(X, t):
+    u, w = X
+    du = alpha_m * w - q_m(u)
+    dw = -beta_m * w + alpha_m * u
+    return [du, dw]
+
+
+def q_b(u):
+    return u * (a * (u - b) ** 2 + c)
+
+
+def q_m(u):
     return u * (a * (u - b) ** 2 + c)
 
 
@@ -180,8 +202,10 @@ def run_simulation(save_folder="Simulations/default"):
             "dy": dy,
             "dt": dt,
             "dtau": dtau,
-            "kx": kx,
-            "ky": ky
+            "kx_b": kx_b,
+            "ky_b": ky_b,
+            "kx_m": kx_m,
+            "ky_m": ky_m,
         }
         for key, value in derived_params.items():
             f_.write(f"{key} {value}\n")
@@ -189,11 +213,11 @@ def run_simulation(save_folder="Simulations/default"):
     print(f"Paramètres enregistrés dans {param_file}")
     
     # Équilibres du modèle
-    uplus = b + np.sqrt((alpha ** 2 - beta * c) / (a * beta));
-    wplus = alpha * uplus / beta;
+    uplus = b + np.sqrt((alpha_b ** 2 - beta_b * c) / (a * beta_b))
+    wplus = alpha_b * uplus / beta_b
     
-    umoins = b - np.sqrt((alpha ** 2 - beta * c) / (a * beta));
-    wmoins = alpha * umoins / beta;
+    umoins = b - np.sqrt((alpha_b ** 2 - beta_b * c) / (a * beta_b))
+    wmoins = alpha_b * umoins / beta_b
     
     print("Uplus = (", uplus, ", ", wplus, ")")
     print("Umoins = (", umoins, ", ", wmoins, ")")
@@ -203,71 +227,116 @@ def run_simulation(save_folder="Simulations/default"):
     y = np.linspace(0.0, L, J)
     X = np.linspace(0.0, L * L, J * J)
     
-    u0 = np.zeros(J * J)
-    w0 = np.zeros(J * J)
+    u_b0 = np.zeros(J * J)
+    w_b0 = np.zeros(J * J)
     for i in range(J):
         for j in range(J):
-            u0[i * J + j] = umoins + (-1 + 2 * random.random()) * 0.5
-            w0[i * J + j] = wmoins + (-1 + 2 * random.random()) * 0.5
+            u_b0[i * J + j] = umoins + (-1 + 2 * random.random()) * 0.5
+            w_b0[i * J + j] = wmoins + (-1 + 2 * random.random()) * 0.5
     
-    # Matrice du schéma
+    u_m0 = np.zeros(J * J)
+    w_m0 = np.zeros(J * J)
+    for i in range(J):
+        for j in range(J):
+            u_m0[i * J + j] = umoins + (-1 + 2 * random.random()) * 0.5
+            w_m0[i * J + j] = wmoins + (-1 + 2 * random.random()) * 0.5
+    
+    # Matrices du schéma : boreale
     diag = np.ones(J)
     diagsup = np.ones(J - 1)
-    D = np.diag(diag * (1 + 2 * (kx + ky)), 0) + np.diag(diagsup * (-ky), 1) + np.diag(diagsup * (-ky), -1)
-    A = block_diag(D)
+    D = np.diag(diag * (1 + 2 * (kx_b + ky_b)), 0) + np.diag(diagsup * (-ky_b), 1) + np.diag(diagsup * (-ky_b), -1)
+    A_b = block_diag(D)
     for i in range(J - 1):
-        A = block_diag(A, D)
+        A_b = block_diag(A_b, D)
     
     # Conditions au bord de Neumann
     for k in [0, J - 1, J * J - J, J * J - 1]:
-        A[k][k] = 1 + kx + ky
+        A_b[k][k] = 1 + kx_b + ky_b
     for n in range(1, J - 1):
         n1 = J * n
         n2 = J * n + J - 1
-        A[n1][n1] = 1 + 2 * kx + ky
-        A[n2][n2] = 1 + 2 * kx + ky
+        A_b[n1][n1] = 1 + 2 * kx_b + ky_b
+        A_b[n2][n2] = 1 + 2 * kx_b + ky_b
     for k in range(1, J - 1):
-        A[k][k] = 1 + kx + 2 * ky
+        A_b[k][k] = 1 + kx_b + 2 * ky_b
     for k in range(J * J - J + 1, J * J - 1):
-        A[k][k] = 1 + kx + 2 * ky
+        A_b[k][k] = 1 + kx_b + 2 * ky_b
     
     grandediag = np.ones(J * (J - 1))
-    A = A + np.diag(grandediag * (-ky), J) + np.diag(grandediag * (-ky), -J)
+    A_b = A_b + np.diag(grandediag * (-ky_b), J) + np.diag(grandediag * (-ky_b), -J)
+    
+    # Matrices du schéma : mixte
+    diag = np.ones(J)
+    diagsup = np.ones(J - 1)
+    D = np.diag(diag * (1 + 2 * (kx_m + ky_m)), 0) + np.diag(diagsup * (-ky_m), 1) + np.diag(diagsup * (-ky_m), -1)
+    A_m = block_diag(D)
+    for i in range(J - 1):
+        A_m = block_diag(A_m, D)
+    
+    # Conditions au bord de Neumann
+    for k in [0, J - 1, J * J - J, J * J - 1]:
+        A_m[k][k] = 1 + kx_m + ky_m
+    for n in range(1, J - 1):
+        n1 = J * n
+        n2 = J * n + J - 1
+        A_m[n1][n1] = 1 + 2 * kx_m + ky_m
+        A_m[n2][n2] = 1 + 2 * kx_m + ky_m
+    for k in range(1, J - 1):
+        A_m[k][k] = 1 + kx_m + 2 * ky_m
+    for k in range(J * J - J + 1, J * J - 1):
+        A_m[k][k] = 1 + kx_m + 2 * ky_m
+    
+    grandediag = np.ones(J * (J - 1))
+    A_m = A_m + np.diag(grandediag * (-ky_m), J) + np.diag(grandediag * (-ky_m), -J)
     
     # Calculs
     print("Inversion de matrices...")
-    invA = np.linalg.inv(A)
+    invA_b = np.linalg.inv(A_b)
+    invA_m = np.linalg.inv(A_m)
     
-    u = u0
-    w = w0
+    u_b = u_b0
+    w_b = w_b0
+    u_m = u_m0
+    w_m = w_m0
     
     print('Calculs en cours...')
     file = open(dat_file, 'w')
     file_fire = open(fires_file, 'w')
-    file.write('t i j u w \n')
+    file.write('t i j ub wb um wm \n')
     
     for t in tqdm(range(T)):
         for i in range(J):
             for j in range(J):
                 file.write(
-                    str(t) + ' ' + str(i) + ' ' + str(j) + ' ' + str(u[i * J + j]) + ' ' + str(w[i * J + j]) + '\n')
+                    str(t) + ' ' + str(i) + ' ' + str(j) + ' ' + str(u_b[i * J + j]) + ' ' + str(w_b[i * J + j]) +
+                    ' ' + str(u_m[i * J + j]) + ' ' + str(w_m[i * J + j]) + '\n'
+                )
         
         """Méthode de Strang"""
         # diffusion 1/2 pas
-        u = np.dot(invA, u)
-        w = np.dot(invA, w)
+        u_b = np.dot(invA_b, u_b)
+        w_b = np.dot(invA_b, w_b)
+        u_m = np.dot(invA_m, u_m)
+        w_m = np.dot(invA_m, w_m)
         
         # réaction 1 pas
         for i in range(J):
             for j in range(J):
-                X0 = [u[i * J + j], w[i * J + j]]
-                orbit = odeint(reaction, X0, [0, dt])
+                X0_b = [u_b[i * J + j], w_b[i * J + j]]
+                orbit = odeint(reaction_b, X0_b, [0, dt])
                 newpoint = orbit[-1]
-                u[i * J + j], w[i * J + j] = newpoint.T
+                u_b[i * J + j], w_b[i * J + j] = newpoint.T
+                
+                X0_m = [u_m[i * J + j], w_m[i * J + j]]
+                orbit = odeint(reaction_b, X0_m, [0, dt])
+                newpoint = orbit[-1]
+                u_m[i * J + j], w_m[i * J + j] = newpoint.T
         
         # diffusion 1/2 pas
-        u = np.dot(invA, u)
-        w = np.dot(invA, w)
+        u_b = np.dot(invA_b, u_b)
+        w_b = np.dot(invA_b, w_b)
+        u_m = np.dot(invA_m, u_m)
+        w_m = np.dot(invA_m, w_m)
         
         if t % freq == 0:
             if np.random.binomial(1, p) == 1:
@@ -285,15 +354,17 @@ def run_simulation(save_folder="Simulations/default"):
                 
                 for i in range(J):
                     for j in range(J):
-                        u[i * J + j] = var_ee(i, j, u)
-                        w[i * J + j] = var_ee(i, j, w)
+                        u_b[i * J + j] = var_ee(i, j, u_b)
+                        w_b[i * J + j] = var_ee(i, j, w_b)
+                        u_m[i * J + j] = var_ee(i, j, u_m)
+                        w_m[i * J + j] = var_ee(i, j, w_m)
     
     print('Fin du programme de simulation.')
 
 
 def get_dfs(from_folder="Simulations/default"):
     df = pd.read_csv(os.path.join(from_folder, "data.csv"),
-                     names=["t", "x", "y", "u", "w"], header=0, sep=" ", index_col=False)
+                     names=["t", "x", "y", "ub", "wb", "um", "wm"], header=0, sep=" ", index_col=False)
     df = df.drop_duplicates()
     
     df_feux = pd.read_csv(os.path.join(from_folder, "fires.dat"),
@@ -374,8 +445,8 @@ class Node:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.u = None
-        # self.ub = None
+        self.ub = None
+        self.um = None
         
         self.fires = None
 
@@ -393,17 +464,10 @@ def build_from_solution(saved_simulation_folder="Simulations/default"):
     
     print(f"\tMax time is {MAX_T}")
     
-    u_min, u_max = df["u"].min(), df["u"].max()
-    # ub_min_, ub_max_ = df["ub"].min(), df["ub"].max()
+    ub_min, ub_max = df["ub"].min(), df["ub"].max()
+    um_min, um_max = df["um"].min(), df["um"].max()
     
     unique_xy_list = list(df[['x', 'y']].drop_duplicates().itertuples(index=False, name=None))
-    
-    """
-    x_min = min(x for x, y in unique_xy_list)
-    x_max = max(x for x, y in unique_xy_list)
-    y_min = min(y for x, y in unique_xy_list)
-    y_max = max(y for x, y in unique_xy_list)
-    """
     
     print("TILE_SIZE = ", TILE_SIZE)
     
@@ -414,16 +478,16 @@ def build_from_solution(saved_simulation_folder="Simulations/default"):
         
         filtered_df = df[(df['x'] == x) & (df['y'] == y)]
         
-        node.u = filtered_df['u'].to_numpy()
-        # node.ub = filtered_df['ub'].to_numpy()
+        node.ub = filtered_df['ub'].to_numpy()
+        node.um = filtered_df['um'].to_numpy()
         
         nodes__.append(node)
     
     print(f"\tBuilt {len(nodes__)} nodes.")
-    print(f"\tu_min = {u_min}")
-    print(f"\tu_max = {u_max}")
-    # print(f"\tub_min = {ub_min_}")
-    # print(f"\tub_max = {ub_max_}")
+    print(f"\tub_min = {ub_min}")
+    print(f"\tub_max = {ub_max}")
+    print(f"\tum_min = {um_min}")
+    print(f"\tum_max = {um_max}")
     print("\n")
     
     return nodes__, df_feux
@@ -454,13 +518,15 @@ class Tree:
         self.pos_y = pos[1]
         
         self.iso_pos = (pos[0] - ELMT_SIZE // 2, pos[1] - ELMT_SIZE)
-        # états : 'hide', 'boreal', 'burning', 'dead'
+        # états : 'hide', 'mixte', 'boreal', 'burning', 'dead'
         self.states = ['hide'] * MAX_T
     
     # affichage de l'arbre en fonction du state et du temps
     def blit(self, screen, t):
         if self.states[t] == 'boreal':
             screen.blit(images["boreal_tree"], self.iso_pos)
+        elif self.states[t] == 'mixte':
+            screen.blit(images["mixte_tree"], self.iso_pos)
         elif self.states[t] == 'burning':
             screen.blit(images["burning_tree"], self.iso_pos)
         elif self.states[t] == 'dead':
@@ -488,19 +554,25 @@ class Tile:
         self.center = (self.topleft_node.x + TILE_SIZE // 2, self.topleft_node.y + TILE_SIZE // 2)
         
         self.area = TILE_SIZE * TILE_SIZE
-        self.u = topleft_node.u
+        self.ub = topleft_node.ub
+        self.um = topleft_node.um
         
         # nombre véritable d'arbres
-        self.true_nb_trees = [u_t * self.area * AREA_SCALE for u_t in self.u]
+        self.true_nb_boreals = [u_t * self.area * AREA_SCALE for u_t in self.ub]
+        self.true_nb_mixtes = [u_t * self.area * AREA_SCALE for u_t in self.um]
         
         # nombre d'arbres à blitter (fonction du nombre max d'arbres à montrer)
-        self.screen_nb_trees = [int((true_nb_trees_t - TREES_T_MIN) * MAX_ELMTS_PER_TILE
-                                    / (TREES_T_MAX - TREES_T_MIN))
-                                for true_nb_trees_t in self.true_nb_trees]
+        self.screen_nb_boreals = [int((true_nb_trees_t - TREES_T_MIN) * MAX_ELMTS_PER_TILE // 2
+                                      / (TREES_T_MAX - TREES_T_MIN))
+                                  for true_nb_trees_t in self.true_nb_boreals]
         
-        #print(self.true_nb_trees)
+        self.screen_nb_mixtes = [int((true_nb_trees_t - TREES_T_MIN) * MAX_ELMTS_PER_TILE // 2
+                                     / (TREES_T_MAX - TREES_T_MIN))
+                                 for true_nb_trees_t in self.true_nb_mixtes]
+        
         self.trees = []  # liste d'instance de trees
         self.generate_trees()
+        random.shuffle(self.trees)
     
     # generate_trees : construction des positions d'abres (avec random_point_in_triangle) et affectation des positions
     # à des instances d'arbres. Par défaut, tous les arbres sont .show=False
@@ -521,15 +593,21 @@ class Tile:
         
         ## 2- construction des arbres
         for point in generated_points:
-            tree = Tree('boreal', *point)
+            tree = Tree('hide', *point)
             self.trees.append(tree)
         
         # construction des showtimes
         for t in range(MAX_T):
-            nb_t = self.screen_nb_trees[t]
-            for tree in self.trees[:nb_t]:
+            
+            nb_boreals_t = self.screen_nb_boreals[t]
+            nb_mixtes_t = self.screen_nb_mixtes[t]
+            for tree in self.trees[:nb_boreals_t]:
                 tree.states[t] = 'boreal'
-    
+            # contournement d'un défaut de slice index natif de python : [-0:] == [0:] !! >:(
+            if -nb_mixtes_t != 0:
+                for tree in self.trees[-nb_mixtes_t:]:
+                    tree.states[t] = 'mixte'
+
     # dessin de la maille, et de son contour si décommenté ci-dessous
     def draw_tile(self, screen):
         
@@ -551,28 +629,24 @@ def create_tiles(nodes):
     print("Generating tiles...")
     
     tiles_ = []
-    test = True
     for node in nodes:
         tile = Tile(node)
-        if test:
-            print(len(tile.trees[0].states))
-            test = False
         tiles_.append(tile)
     
     print(f"\tGenerated {len(tiles_)} tiles.")
     
     mean_area = np.mean([tile.area for tile in tiles_])
-    max_true_nb = np.max([tile.true_nb_trees for tile in tiles_])
-    # max_true_nb_boreal = np.max([tile.true_nb_trees_boreal for tile in tiles_])
-    max_screen_nb = np.max([tile.screen_nb_trees for tile in tiles_])
-    # max_screen_nb_boreal = np.max([tile.screen_nb_trees_boreal for tile in tiles_])
+    max_true_boreals = np.max([tile.true_nb_boreals for tile in tiles_])
+    max_true_mixtes = np.max([tile.true_nb_mixtes for tile in tiles_])
+    max_screen_boreals = np.max([tile.screen_nb_boreals for tile in tiles_])
+    max_screen_mixtes = np.max([tile.screen_nb_mixtes for tile in tiles_])
     
     print("\nTILES PROPERTIES")
     print(f"\tmean_area: {mean_area}")
-    print(f"\tmax_true_nb_temperate: {max_true_nb}")
-    # print(f"\tmax_true_nb_boreal: {max_true_nb_boreal}")
-    print(f"\tmax_screen_nb_temperate: {max_screen_nb}")
-    # print(f"\tmax_screen_nb_boreal: {max_screen_nb_boreal}\n")
+    print(f"\tmax_true_boreals: {max_true_boreals}")
+    print(f"\tmax_true_mixtes: {max_true_mixtes}")
+    print(f"\tmax_screen_boreals: {max_screen_boreals}")
+    print(f"\tmax_screen_mixtes: {max_screen_mixtes}")
     
     return tiles_
 
@@ -600,8 +674,8 @@ def resolve_burning_trees(tiles, df_feux):
         
         for tile in tiles:
             
-            dif_x = tile.center[0] - fire.x
-            dif_y = tile.center[1] - fire.y
+            dif_x = abs(tile.center[0] - fire.x)
+            dif_y = abs(tile.center[1] - fire.y)
             
             # vérifier que le centre de la tuile est dans le feu = tuile en feu
             if dif_x ** 2 + dif_y ** 2 < fire.r ** 2:
@@ -610,8 +684,8 @@ def resolve_burning_trees(tiles, df_feux):
                 eligible_trees = [tree for tree in tile.trees
                                   if tree.states[int(fire.t_start) - 1] not in ['hide', 'dead']]
                 
-                nb_to_keep = int(len(eligible_trees) * fire.I)  # nb d'arbres qui brûlent parmi les eligibles
-                selected_trees = eligible_trees[nb_to_keep:]
+                nb_to_burn = int(len(eligible_trees) * fire.I)  # nb d'arbres qui brûlent parmi les eligibles
+                selected_trees = random.sample(eligible_trees, nb_to_burn)
                 
                 for tree in selected_trees:
                     for fire_time in range(fire_start, fire_end):
@@ -635,7 +709,7 @@ if __name__ == "__main__":
         print(f"ERROR : Simulation {SIMULATION_SAVE_FOLDER} not found.\n"
               f" Try setting \"MAKE_NEW_SIMULATION\" to \"True\", or select another folder.")
         quit(1)
-        
+    
     if MAKE_NEW_SIMULATION:
         # lance la simulation et récupère les paramètres
         run_simulation(SIMULATION_SAVE_FOLDER)
@@ -740,7 +814,7 @@ if __name__ == "__main__":
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             # écriture de la frame
             video_writer.write(frame)
-        
+            
             # Sauvegarde en JPEG (plan B)
             frame_filename = os.path.join(frames_folder, f"frame_{t}.jpg")
             cv2.imwrite(frame_filename, frame)

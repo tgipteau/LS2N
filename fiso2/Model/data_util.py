@@ -31,7 +31,7 @@ def get_df(folder_path):
         t = extraire_t(f)
         
         # Lire le fichier en ignorant les lignes vides
-        df = pd.read_csv(f, sep="\t", header=None, names=["x", "y", "ut", "ub"])
+        df = pd.read_csv(f, sep="\t", header=None, names=["x", "y", "um", "ub"])
         
         # Ajouter la colonne du temps t
         df["t"] = t
