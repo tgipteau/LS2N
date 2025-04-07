@@ -8,7 +8,7 @@ Modèle à quatre équations avec compétition. Méthode des différences finies
 
 
 1 - régler ses paramètres de simulation dans config.yaml
-2 - lancer fiso3.main
+2 - lancer fiso4.main
 3- les boutons / curseurs ne sont utilisables qu'après un tour complet de la simulation,
 pour pouvoir sauvegarder la vidéo / les frames
 
