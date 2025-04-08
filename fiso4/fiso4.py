@@ -68,6 +68,8 @@ LIGHT_GREEN = (86, 179, 86)
 RED = (255, 0, 0)
 SNOW = (197, 205, 217)
 ICE = (160, 190, 235)
+BLUE = (0, 0, 255)
+ORANGE = (255, 128, 0)
 
 ########################################################################################
 # ----------------------- Initialisation de Pygame et du videoWriter
@@ -124,6 +126,8 @@ images = {
 a = config["params_simulation"]["a"]
 b = config["params_simulation"]["b"]
 c = config["params_simulation"]["c"]
+gamma_south = config["params_simulation"]["gamma_south"]
+gamma_north = config["params_simulation"]["gamma_north"]
 
 # boreale
 alpha_b = config["params_simulation"]["alpha_b"]
@@ -158,26 +162,30 @@ ky_m = delta_m * dtau / dy ** 2
 
 
 # Termes de réaction du modèle
-def reaction_b(X, t):
-    u, w = X
-    du = alpha_b * w - q_b(u)
-    dw = -beta_b * w + alpha_b * u
-    return [du, dw]
+
+gamma = np.linspace(start=gamma_south, stop=gamma_north, num=J)
+
+def q_b(ub, um, gamma_i):
+    return ub * (a * (ub + um - b) ** 2 + c) + gamma_i * ub * um
+
+def q_m(ub, um, gamma_i):
+    return um * (a * (um + ub - b) ** 2 + c) - gamma_i * ub * um
 
 
-def reaction_m(X, t):
-    u, w = X
-    du = alpha_m * w - q_m(u)
-    dw = -beta_m * w + alpha_m * u
-    return [du, dw]
+def reaction(X, t, i):
+    ub, um, wb, wm = X
+    gamma_i = gamma[i]
+
+    dub = alpha_b * wb - q_b(ub, um, gamma_i)
+    dwb = -beta_b * wb + alpha_b * ub
+
+    dum = alpha_m * wm - q_m(ub, um, gamma_i)
+    dwm = -beta_m * wm + alpha_m * um
+
+    return [dub, dum, dwb, dwm]
 
 
-def q_b(u):
-    return u * (a * (u - b) ** 2 + c)
 
-
-def q_m(u):
-    return u * (a * (u - b) ** 2 + c)
 
 
 def run_simulation(save_folder="Simulations/default"):
@@ -202,10 +210,6 @@ def run_simulation(save_folder="Simulations/default"):
             "dy": dy,
             "dt": dt,
             "dtau": dtau,
-            "kx_b": kx_b,
-            "ky_b": ky_b,
-            "kx_m": kx_m,
-            "ky_m": ky_m,
         }
         for key, value in derived_params.items():
             f_.write(f"{key} {value}\n")
@@ -213,10 +217,10 @@ def run_simulation(save_folder="Simulations/default"):
     print(f"Paramètres enregistrés dans {param_file}")
     
     # Équilibres du modèle
-    uplus = b + np.sqrt((alpha_b ** 2 - beta_b * c) / (a * beta_b))
+    uplus = b + np.sqrt(abs((alpha_b ** 2 - beta_b * c) / (a * beta_b)))
     wplus = alpha_b * uplus / beta_b
     
-    umoins = b - np.sqrt((alpha_b ** 2 - beta_b * c) / (a * beta_b))
+    umoins = b - np.sqrt(abs((alpha_b ** 2 - beta_b * c) / (a * beta_b)))
     wmoins = alpha_b * umoins / beta_b
     
     print("Uplus = (", uplus, ", ", wplus, ")")
@@ -322,15 +326,10 @@ def run_simulation(save_folder="Simulations/default"):
         # réaction 1 pas
         for i in range(J):
             for j in range(J):
-                X0_b = [u_b[i * J + j], w_b[i * J + j]]
-                orbit = odeint(reaction_b, X0_b, [0, dt])
-                newpoint = orbit[-1]
-                u_b[i * J + j], w_b[i * J + j] = newpoint.T
-                
-                X0_m = [u_m[i * J + j], w_m[i * J + j]]
-                orbit = odeint(reaction_b, X0_m, [0, dt])
-                newpoint = orbit[-1]
-                u_m[i * J + j], w_m[i * J + j] = newpoint.T
+                idx = i * J + j
+                X0 = [u_b[idx], u_m[idx], w_b[idx], w_m[idx]]
+                orbit = odeint(reaction, X0, [0, dt], args=(j,))
+                u_b[idx], u_m[idx], w_b[idx], w_m[idx] = orbit[-1]
         
         # diffusion 1/2 pas
         u_b = np.dot(invA_b, u_b)
@@ -789,6 +788,17 @@ if __name__ == "__main__":
             screen.blit(surface, (10, y_offset))
             y_offset += surface.get_height() + 5
         
+        """
+        # affichage des points cardinaux (debug)
+        north = projeter_en_isometrique(5,10)
+        south = projeter_en_isometrique(5,0)
+        east = projeter_en_isometrique(10,5)
+        west = projeter_en_isometrique(0,5)
+        pygame.draw.circle(screen, RED, north, 10)
+        pygame.draw.circle(screen, DARK_GREEN, south, 10)
+        pygame.draw.circle(screen, BLUE, east, 10)
+        pygame.draw.circle(screen, ORANGE, west, 10)
+        """
         ####################################################
         ## Gestion fin de simulation / enregistrement video
         ####################################################

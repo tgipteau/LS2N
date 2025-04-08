@@ -1,7 +1,7 @@
 # Paramètres de simulation
 
 MAKE_NEW_SIMULATION: True
-SIMULATION_SAVE_FOLDER: "sim2"
+SIMULATION_SAVE_FOLDER: "sim3lowfire"
 
 ISO_SCALE: 18                     # à changer en fonction de la taille de omega
 MAX_ELMTS_PER_TILE: 12          # ratio par rapport à iso_scale
@@ -17,27 +17,31 @@ MAX_TRUE_NUMBER_OF_TREES: 1.2
 
 params_simulation:
   # Paramètres du modèle
-  alpha_b: 1
-  beta_b: 1
-  delta_b: 0.5
+  alpha_b: 0.8    # taux succès graines
+  beta_b: 1     # taux transfert graines
+  delta_b: 0.5  # taux diffusion graines
 
-  alpha_m: 1
+  alpha_m: 0.8
   beta_m: 1
-  delta_m: 0.5
+  delta_m: 1
 
+  # compétition / q-fonction
   a: 3
   b: 1
   c: 0.5
+  gamma_south : -0.4          # on attend un nombre négatif (avantage les mixtes)
+  gamma_north : 0.4            #  on attend un nombre positif (avantage les boreal)
+                                # gamma sera interpolé linéairement entre sud et nord
 
   # Paramètres de discrétisation
   L: 20
   J: 40                       # discrétisation spatiale
-  T: 100                     # temps maximal
+  T: 100                   # temps maximal
   N: 1000
 
   # Paramètres feux
   p: 0.1             # probabilité feu à chaque pas de temps
   freq: 1            # pas de temps minimal entre feux
   intensity: 0.7
-  minree: 1
+  minree: 2
   maxree: 6
