@@ -31,7 +31,6 @@ real[int] vecval(28);  // Tableau pour stocker les valeurs des paramètres
         vecval(i) = n;
     }
 }
-
 // Attribution des valeurs aux variables
 
 // Forêt mixte
@@ -238,7 +237,7 @@ for (int m=0; m<tmax/dt; m++)
 	plot(u2, WindowIndex=2, cmm="BOREALE : t="+ t + ", u2: min=" + u2[].min + ", max=" + u2[].max, wait=false, fill=true);//, dim=3);
     */
 
-	ofstream f1("u-"+m+".dat");
+	ofstream f1("output/u-" + m + ".dat");
 
     	for (int i=0;i<Th.nt;i++){
             	for (int j=0; j<3; j++){
@@ -377,7 +376,7 @@ for (int m=0; m<tmax/dt; m++)
 
 {
 // fichier qui indique la fin du programme (uniquement pour implémentation en subprocess python)
-ofstream ffires ("EOP");
+ofstream feop ("output/EOP");
 }
 
 

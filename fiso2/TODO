@@ -1,4 +1,1 @@
-- stockage des simulations similaire à fiso3 et 4
-- retour de l'avancée de FreeFem++
-- auto set max elmt % 2
-- play mode default passé à true, pas bien ?
+- remove model.edp from sim_folder
