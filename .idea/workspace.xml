@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1270afe4-7d4b-41ba-9a79-cc7dd859783f" name="Changes" comment="fiso2 avec TK et stockage propre des simulations">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/fiso2/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/fiso2/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/fiso3/README" beforeDir="false" afterPath="$PROJECT_DIR$/fiso3/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/fiso4/README" beforeDir="false" afterPath="$PROJECT_DIR$/fiso4/README.md" afterDir="false" />
+    <list default="true" id="1270afe4-7d4b-41ba-9a79-cc7dd859783f" name="Changes" comment="Readmes">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -262,7 +259,7 @@
       <workItem from="1744025783391" duration="18734000" />
       <workItem from="1744102650227" duration="3000" />
       <workItem from="1744117017314" duration="3362000" />
-      <workItem from="1744182852035" duration="15710000" />
+      <workItem from="1744182852035" duration="15895000" />
     </task>
     <task id="LOCAL-00001" summary="fiso 3">
       <option name="closed" value="true" />
@@ -368,7 +365,15 @@
       <option name="project" value="LOCAL" />
       <updated>1744198467782</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Readmes">
+      <option name="closed" value="true" />
+      <created>1744199151776</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1744199151776</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -385,7 +390,8 @@
     <MESSAGE value="gitignore fiso" />
     <MESSAGE value="unversionneds 8avril" />
     <MESSAGE value="fiso2 avec TK et stockage propre des simulations" />
-    <option name="LAST_COMMIT_MESSAGE" value="fiso2 avec TK et stockage propre des simulations" />
+    <MESSAGE value="Readmes" />
+    <option name="LAST_COMMIT_MESSAGE" value="Readmes" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/LS2N$forest_2d.coverage" NAME="forest-2d Coverage Results" MODIFIED="1743672497586" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/fiso3" />
