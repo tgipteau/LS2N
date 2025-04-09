@@ -1,7 +1,7 @@
 # Paramètres de simulation
 
 MAKE_NEW_SIMULATION: True
-SIMULATION_SAVE_FOLDER: "sim2"
+SIMULATION_SAVE_FOLDER: "default"
 
 ISO_SCALE: 18                     # à changer en fonction de la taille de omega
 MAX_ELMTS_PER_TILE: 12          # ratio par rapport à iso_scale

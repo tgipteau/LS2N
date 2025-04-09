@@ -3,7 +3,7 @@
 # True et "name" ->> nouvelle simulation dans "name" (= écrase la précédente si "name" existe déjà !)
 # False et "name" ->> charge la simulation enregistrée dans "name" (si "name" n'existe pas : erreur)
 MAKE_NEW_SIMULATION: True
-SIMULATION_SAVE_FOLDER: "sim3lowfire"
+SIMULATION_SAVE_FOLDER: "default"
 
 
 # paramètres rendu
