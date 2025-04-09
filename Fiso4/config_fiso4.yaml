@@ -1,7 +1,12 @@
 # Paramètres de simulation
 
+# True et "name" ->> nouvelle simulation dans "name" (= écrase la précédente si "name" existe déjà !)
+# False et "name" ->> charge la simulation enregistrée dans "name" (si "name" n'existe pas : erreur)
 MAKE_NEW_SIMULATION: True
 SIMULATION_SAVE_FOLDER: "sim3lowfire"
+
+
+# paramètres rendu
 
 ISO_SCALE: 18                     # à changer en fonction de la taille de omega
 MAX_ELMTS_PER_TILE: 12          # ratio par rapport à iso_scale
@@ -17,13 +22,16 @@ MAX_TRUE_NUMBER_OF_TREES: 1.2
 
 params_simulation:
   # Paramètres du modèle
+  # forêt boréale (vert foncé)
   alpha_b: 0.8    # taux succès graines
   beta_b: 1     # taux transfert graines
   delta_b: 0.5  # taux diffusion graines
 
+  # forêt mixte (vert clair)
   alpha_m: 0.8
   beta_m: 1
   delta_m: 1
+
 
   # compétition / q-fonction
   a: 3

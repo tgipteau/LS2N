@@ -3,7 +3,7 @@
 
 ## UTILISATION 
 
-1 - régler ses paramètres de simulation dans config.yaml<br>
+1 - régler ses paramètres de simulation dans config.yaml <i>(lire les commentaires)</i><br>
 2 - lancer fiso3.main<br>
 3- les boutons / curseurs ne sont utilisables qu'après un tour complet de la simulation,
 pour pouvoir sauvegarder la vidéo / les frames<br>

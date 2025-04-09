@@ -1,3 +1,0 @@
-FISO4 : simulation différences finies du modèle à 4 équations.
-FISO3 : simulation de forêt avec différences finies. Modèle deux équations.
-FISO2 : simulation avec éléments finis (FREEFEM). Modèle quatre équations.
