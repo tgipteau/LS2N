@@ -143,6 +143,50 @@ dtau = dt / 2
 kx = delta * dtau / dx ** 2
 ky = delta * dtau / dy ** 2
 
+init_method = "naive"
+
+
+def randomize_starter(uplus, wplus, umoins, wmoins):
+    
+    if init_method == "naive":
+        # méthode naive : état instable +- 0.5 partout, sur chaque point
+        u_0 = np.zeros(J * J)
+        w_0 = np.zeros(J * J)
+        for i in range(J):
+            for j in range(J):
+                u_0[i * J + j] = umoins + (-1 + 2 * random.random()) * 0.5
+                w_0[i * J + j] = wmoins + (-1 + 2 * random.random()) * 0.5
+    
+        return u_0, w_0
+    
+    elif init_method == "bumps":
+        # méthode "à bosses"
+        max_bosses = 50
+        max_height = uplus
+        max_d = 20
+        
+        nb_bosses = random.randint(1, max_bosses)
+        u_0 = np.zeros(J * J)
+        w_0 = np.zeros(J * J)
+        
+        for _ in range(nb_bosses):
+            
+            h = random.random() * max_height
+            d = random.randint(1, max_d)
+            cx = random.randint(0, J)
+            cy = random.randint(0, J)
+            
+            print(f"h = {h}, d = {d}, cx = {cx}, cy = {cy}")
+            
+            bosse_func = lambda i, j: h * d / ((cx - i) ** 2 + (cy - j) ** 2 + d)
+            
+            for i in range(J):
+                for j in range(J):
+                    u_0[i * J + j] += bosse_func(i, j)
+                    w_0[i * J + j] += bosse_func(i, j)
+        
+        return u_0, w_0
+    
 
 # Termes de réaction du modèle
 def reaction(X, t):
@@ -201,12 +245,7 @@ def run_simulation(save_folder="Simulations/default"):
     y = np.linspace(0.0, L, J)
     X = np.linspace(0.0, L * L, J * J)
     
-    u0 = np.zeros(J * J)
-    w0 = np.zeros(J * J)
-    for i in range(J):
-        for j in range(J):
-            u0[i * J + j] = umoins + (-1 + 2 * random.random()) * 0.5
-            w0[i * J + j] = wmoins + (-1 + 2 * random.random()) * 0.5
+    u0, w0 = randomize_starter(uplus, wplus, umoins, wmoins)
     
     # Matrice du schéma
     diag = np.ones(J)
@@ -722,7 +761,7 @@ if __name__ == "__main__":
             video_writer.write(frame)
             
             # Sauvegarde en JPEG (plan B)
-            frame_filename = os.path.join(frames_folder, f"frame_{t}.jpg")
+            frame_filename = os.path.join(frames_folder, f"frame_{t:02d}.jpg")
             cv2.imwrite(frame_filename, frame)
         ##########################################
         ## Gestion des évenements
