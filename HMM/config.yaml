@@ -1,0 +1,37 @@
+params_simulation:
+  # Paramètres du modèle
+  # forêt boréale (vert foncé)
+  alpha_b: 1    # taux succès graines
+  beta_b: 1     # taux transfert graines
+  delta_b: 0.5  # taux diffusion graines
+
+  # forêt mixte (vert clair)
+  alpha_m: 1
+  beta_m: 1
+  delta_m: 0.5
+
+
+  # compétition / q-fonction
+  a: 3
+  b: 1
+  c: 0.5
+  gamma_south : -0.4          # on attend un nombre négatif (avantage les mixtes)
+  gamma_north : 0.4            #  on attend un nombre positif (avantage les boreal)
+                                # gamma sera interpolé linéairement entre sud et nord
+
+  # Paramètres de discrétisation
+  L: 20
+  J: 40                       # discrétisation spatiale
+  T: 300               # temps maximal
+  N: 1000                 # nb de pas de temps (ie dt = T/N)
+
+  # Paramètres feux
+  p: 0.1             # probabilité feu à chaque pas de temps
+  freq: 1            # pas de temps minimal entre feux
+  intensity: 0.7
+  minree: 2
+  maxree: 6
+
+  # paramètres randomisation du starter
+  max_bosses: 20
+
