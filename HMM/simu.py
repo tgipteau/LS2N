@@ -117,12 +117,11 @@ def randomize_starter(uplus, wplus, umoins, wmoins):
     
     return u_0, w_0
 
-def run_simulation(save_folder="Simulations/default"):
+def run_simulation(sim_name, save_folder="Simulations"):
     os.makedirs(save_folder, exist_ok=True)
     
-    dat_file = os.path.join(save_folder, "data.csv")
-    param_file = os.path.join(save_folder, "params.txt")
-    fires_file = os.path.join(save_folder, "fires.dat")
+    dat_file = os.path.join(save_folder, "data"+sim_name+".csv")
+    fires_file = os.path.join(save_folder, "fires"+sim_name+".dat")
     
     # Équilibres du modèle
     uplus = b + np.sqrt(abs((alpha_b ** 2 - beta_b * c) / (a * beta_b)))
@@ -130,8 +129,8 @@ def run_simulation(save_folder="Simulations/default"):
     umoins = b - np.sqrt(abs((alpha_b ** 2 - beta_b * c) / (a * beta_b)))
     wmoins = alpha_b * umoins / beta_b
     
-    print("Uplus = (", uplus, ", ", wplus, ")")
-    print("Umoins = (", umoins, ", ", wmoins, ")")
+    #print("Uplus = (", uplus, ", ", wplus, ")")
+    #print("Umoins = (", umoins, ", ", wmoins, ")")
     
     # Condition initiale
     x = np.linspace(0.0, L, J)
@@ -190,7 +189,7 @@ def run_simulation(save_folder="Simulations/default"):
     A_m = A_m + np.diag(grandediag * (-ky_m), J) + np.diag(grandediag * (-ky_m), -J)
     
     # Calculs
-    print("Inversion de matrices...")
+    #print("Inversion de matrices...")
     invA_b = np.linalg.inv(A_b)
     invA_m = np.linalg.inv(A_m)
     
@@ -199,7 +198,7 @@ def run_simulation(save_folder="Simulations/default"):
     u_m = u_m0
     w_m = w_m0
     
-    print('Calculs en cours...')
+    #print('Calculs en cours...')
     file = open(dat_file, 'w')
     file_fire = open(fires_file, 'w')
     file.write('t i j ub wb um wm \n')
@@ -254,6 +253,6 @@ def run_simulation(save_folder="Simulations/default"):
                         u_m[i * J + j] = var_ee(i, j, u_m)
                         w_m[i * J + j] = var_ee(i, j, w_m)
     
-    print('Fin du programme de simulation.')
+    #print('Fin du programme de simulation.')
     
     return uplus, wplus, umoins, wmoins
