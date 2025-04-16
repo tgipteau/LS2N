@@ -22,8 +22,8 @@ params_simulation:
   # Paramètres de discrétisation
   L: 20
   J: 40                       # discrétisation spatiale
-  T: 300               # temps maximal
-  N: 1000                 # nb de pas de temps (ie dt = T/N)
+  T: 100             # temps maximal
+  N: 100                 # nb de pas de temps (ie dt = T/N)
 
   # Paramètres feux
   p: 0.1             # probabilité feu à chaque pas de temps
