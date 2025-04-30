@@ -150,11 +150,7 @@ def creer_nouvelle_simulation(parametres):
     simulation_thread = threading.Thread(target=lambda: subprocess.run([sys.executable, "2_runsim.py", sim_folder]))
     simulation_thread.start()
     
-    print(parametres["tmax"])
-    print(parametres["dt"])
-    
     max_iter = int(float(parametres["tmax"])/float(parametres["dt"]))
-    print(max_iter)
  
     def update_progress():
         if not os.path.exists(sim_folder + "/output/" + "EOP"):
